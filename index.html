@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lekhrive - متابعة الأمطار في موريتانيا</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #f0f9ff;
+        }
+        
+        .rain-intensity-light {
+            background-color: #e0f2fe;
+            border-left: 4px solid #38bdf8;
+        }
+        
+        .rain-intensity-moderate {
+            background-color: #bae6fd;
+            border-left: 4px solid #0ea5e9;
+        }
+        
+        .rain-intensity-heavy {
+            background-color: #7dd3fc;
+            border-left: 4px solid #0369a1;
+        }
+        
+        .tab-active {
+            border-bottom: 3px solid #0369a1;
+            color: #0369a1;
+            font-weight: bold;
+        }
+        
+        /* For LTR elements like numbers */
+        .ltr {
+            direction: ltr;
+            unicode-bidi: embed;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #0369a1;
+            border-radius: 4px;
+        }
+        
+        /* Animation for rain entries */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .rain-entry {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-900 mb-2">🌧️ Lekhrive</h1>
+            <p class="text-lg text-blue-700">متابعة الأمطار في مختلف ولايات موريتانيا</p>
+            <div class="mt-4 text-sm text-blue-600">
+                <p>بيانات رسمية من وزارة الداخلية الموريتانية</p>
+                <p class="text-xs mt-1 text-gray-500">آخر تحديث: <span id="last-updated">اليوم على الساعة 10:00</span></p>
+            </div>
+        </header>
+        
+        <!-- Main Dashboard -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <!-- Tabs Navigation -->
+            <div class="flex border-b border-gray-200">
+                <button id="tab-48h" class="flex-1 py-4 px-2 text-center font-medium tab-active">
+                    <i class="fas fa-clock mr-1"></i> آخر 48 ساعة
+                </button>
+                <button id="tab-week" class="flex-1 py-4 px-2 text-center font-medium text-gray-500 hover:text-blue-800">
+                    <i class="fas fa-calendar-week mr-1"></i> خلال الأسبوع
+                </button>
+            </div>
+            
+            <!-- Filters -->
+            <div class="p-4 border-b border-gray-200 bg-gray-50">
+                <div class="flex flex-wrap gap-4">
+                    <div class="flex-1 min-w-[150px]">
+                        <label for="region-filter" class="block text-sm font-medium text-gray-700 mb-1">الولاية</label>
+                        <select id="region-filter" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="all">جميع الولايات</option>
+                            <option value="نواكشوط">نواكشوط</option>
+                            <option value="الحوض الشرقي">الحوض الشرقي</option>
+                            <option value="الحوض الغربي">الحوض الغربي</option>
+                            <option value="لعصابة">لعصابة</option>
+                            <option value="كوركول">كوركول</option>
+                            <option value="البراكنة">البراكنة</option>
+                            <option value="ترارزة">ترارزة</option>
+                            <option value="أدرار">أدرار</option>
+                            <option value="انواذيبو">انواذيبو</option>
+                            <option value="تيرس زمور">تيرس زمور</option>
+                            <option value="إينشيري">إينشيري</option>
+                            <option value="تكانت">تكانت</option>
+                            <option value="كيدي ماغا">كيدي ماغا</option>
+                            <option value="آدرار">آدرار</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex-1 min-w-[150px]">
+                        <label for="intensity-filter" class="block text-sm font-medium text-gray-700 mb-1">شدة الأمطار</label>
+                        <select id="intensity-filter" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="all">جميع المستويات</option>
+                            <option value="light">خفيفة (0-10 مم)</option>
+                            <option value="moderate">متوسطة (11-30 مم)</option>
+                            <option value="heavy">غزيرة (30+ مم)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex-1 min-w-[150px]">
+                        <label for="sort-by" class="block text-sm font-medium text-gray-700 mb-1">ترتيب حسب</label>
+                        <select id="sort-by" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="recent">الأحدث</option>
+                            <option value="highest">الأعلى أمطاراً</option>
+                            <option value="location">حسب الموقع</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-end">
+                        <button id="apply-filters" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors">
+                            تطبيق الفلاتر
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab Content - Last 48 Hours -->
+            <div id="content-48h" class="p-4">
+                <div class="mb-4 flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-blue-900">تسجيلات الأمطار خلال آخر 48 ساعة</h2>
+                    <span class="text-sm text-blue-600">عدد النقاط: <span id="count-48h">12</span></span>
+                </div>
+                
+                <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2" id="rain-list-48h">
+                    <!-- Rain entries will be added here by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Tab Content - This Week (hidden by default) -->
+            <div id="content-week" class="p-4 hidden">
+                <div class="mb-4 flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-blue-900">تسجيلات الأمطار خلال هذا الأسبوع</h2>
+                    <span class="text-sm text-blue-600">عدد النقاط: <span id="count-week">42</span></span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الولاية</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المدينة/القرية</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">كمية الأمطار (مم)</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المسافة من نواكشوط</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="rain-table-week">
+                            <!-- Table rows will be added here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Map Section -->
+        <div class="mt-8 bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-blue-900">خريطة توزيع الأمطار</h2>
+                <p class="text-sm text-gray-600 mt-1">انقر على أي علامة لمعرفة التفاصيل</p>
+            </div>
+            <div class="p-4 h-64 md:h-96 bg-gray-100 flex items-center justify-center">
+                <div id="map-placeholder" class="text-center">
+                    <i class="fas fa-map-marked-alt text-4xl text-blue-500 mb-2"></i>
+                    <p class="text-gray-700">خريطة تفاعلية تظهر مواقع تسجيل الأمطار</p>
+                    <p class="text-sm text-gray-500 mt-2">(سيتم دمجها مع خرائط جوجل في التطبيق الكامل)</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-sm text-gray-600">
+            <p>بيانات مقدمة من وزارة الداخلية الموريتانية - <a href="https://www.interieur.gov.mr/" class="text-blue-600 hover:underline" target="_blank">interieur.gov.mr</a></p>
+            <p class="mt-1">© 2023 Lekhrive - جميع الحقوق محفوظة</p>
+        </footer>
+    </div>
+
+    <script>
+        // Sample data - in a real app, this would come from an API or scraping
+        const rainData = [
+            { region: "لعصابة", city: "كيفة", rainfall_mm: 37.2, date: "2023-07-15", time: "10:00", time_ago: "قبل 12 ساعة", distance: "3 ساعات و 10 دقائق" },
+            { region: "الحوض الشرقي", city: "أييون", rainfall_mm: 25, date: "2023-07-15", time: "02:00", time_ago: "قبل 20 ساعة", distance: "5 ساعات و 45 دقيقة" },
+            { region: "الحوض الغربي", city: "النعمة", rainfall_mm: 8, date: "2023-07-14", time: "18:00", time_ago: "قبل 40 ساعة", distance: "7 ساعات و 30 دقيقة" },
+            { region: "نواكشوط", city: "تفرغ زينة", rainfall_mm: 15.5, date: "2023-07-15", time: "08:30", time_ago: "قبل 14 ساعة", distance: "20 دقيقة" },
+            { region: "آدرار", city: "أطار", rainfall_mm: 42.8, date: "2023-07-14", time: "12:00", time_ago: "قبل 44 ساعة", distance: "4 ساعات و 15 دقيقة" },
+            { region: "ترارزة", city: "روصو", rainfall_mm: 30.1, date: "2023-07-15", time: "06:00", time_ago: "قبل 16 ساعة", distance: "2 ساعات و 50 دقيقة" },
+            { region: "لعصابة", city: "بومديد", rainfall_mm: 12.3, date: "2023-07-14", time: "22:00", time_ago: "قبل 36 ساعة", distance: "3 ساعات و 40 دقيقة" },
+            { region: "كوركول", city: "كيهيدي", rainfall_mm: 5.7, date: "2023-07-14", time: "16:00", time_ago: "قبل 42 ساعة", distance: "6 ساعات" },
+            { region: "الحوض الشرقي", city: "النعمة", rainfall_mm: 18.9, date: "2023-07-15", time: "04:00", time_ago: "قبل 18 ساعة", distance: "5 ساعات و 45 دقيقة" },
+            { region: "تكانت", city: "تجكجة", rainfall_mm: 22.4, date: "2023-07-15", time: "00:00", time_ago: "قبل 22 ساعة", distance: "4 ساعات و 30 دقيقة" },
+            { region: "إينشيري", city: "أكجوجت", rainfall_mm: 9.1, date: "2023-07-14", time: "14:00", time_ago: "قبل 38 ساعة", distance: "3 ساعات و 15 دقيقة" },
+            { region: "نواكشوط", city: "لكصر", rainfall_mm: 11.2, date: "2023-07-15", time: "09:00", time_ago: "قبل 13 ساعة", distance: "10 دقائق" }
+        ];
+
+        // Generate weekly data (same format but more entries)
+        const weeklyData = [...rainData];
+        for (let i = 0; i < 30; i++) {
+            const regions = ["نواكشوط", "الحوض الشرقي", "الحوض الغربي", "لعصابة", "كوركول", "البراكنة", "ترارزة", "أدرار", "انواذيبو", "تيرس زمور", "إينشيري", "تكانت", "كيدي ماغا", "آدرار"];
+            const cities = ["كيفة", "أييون", "النعمة", "تفرغ زينة", "أطار", "روصو", "بومديد", "كيهيدي", "تجكجة", "أكجوجت", "لكصر", "المذرذرة", "بوتلميت", "ألاك", "بابابى", "كرو", "تمبدغة", "واد الناقة"];
+            
+            const randomRegion = regions[Math.floor(Math.random() * regions.length)];
+            const randomCity = cities[Math.floor(Math.random() * cities.length)];
+            const randomRainfall = (Math.random() * 50).toFixed(1);
+            
+            // Random date in the past 7 days
+            const randomDay = Math.floor(Math.random() * 7);
+            const date = new Date();
+            date.setDate(date.getDate() - randomDay);
+            const dateStr = date.toISOString().split('T')[0];
+            
+            // Random time
+            const hours = Math.floor(Math.random() * 24).toString().padStart(2, '0');
+            const minutes = Math.floor(Math.random() * 60).toString().padStart(2, '0');
+            const time = `${hours}:${minutes}`;
+            
+            // Time ago text
+            const timeAgoText = randomDay === 0 ? "اليوم" : 
+                               randomDay === 1 ? "بالأمس" : 
+                               `قبل ${randomDay} أيام`;
+            
+            // Random distance
+            const distanceHours = Math.floor(Math.random() * 8);
+            const distanceMins = Math.floor(Math.random() * 60);
+            const distanceText = distanceHours > 0 ? 
+                               `${distanceHours} ساعة${distanceHours > 1 ? 'ات' : ''} و ${distanceMins} دقيقة${distanceMins !== 1 ? 'ات' : ''}` : 
+                               `${distanceMins} دقيقة${distanceMins !== 1 ? 'ات' : ''}`;
+            
+            weeklyData.push({
+                region: randomRegion,
+                city: randomCity,
+                rainfall_mm: parseFloat(randomRainfall),
+                date: dateStr,
+                time: time,
+                time_ago: timeAgoText,
+                distance: distanceText
+            });
+        }
+
+        // Function to get rain intensity class
+        function getRainIntensity(amount) {
+            if (amount <= 10) return { class: "light", icon: "☁️", name: "خفيفة" };
+            if (amount <= 30) return { class: "moderate", icon: "🌦️", name: "متوسطة" };
+            return { class: "heavy", icon: "🌧️", name: "غزيرة" };
+        }
+
+        // Function to render 48h rain entries
+        function render48hRainEntries(data) {
+            const container = document.getElementById('rain-list-48h');
+            container.innerHTML = '';
+            
+            data.forEach(item => {
+                const intensity = getRainIntensity(item.rainfall_mm);
+                
+                const entry = document.createElement('div');
+                entry.className = `rain-entry p-3 rounded-lg flex items-center justify-between rain-intensity-${intensity.class}`;
+                
+                entry.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="text-xl mr-3">${intensity.icon}</span>
+                        <div>
+                            <h3 class="font-medium">${item.city} - ${item.region}</h3>
+                            <p class="text-sm text-gray-600">${item.time_ago} • ${item.date} ${item.time}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="block font-bold text-lg ltr">${item.rainfall_mm} مم</span>
+                        <span class="text-xs text-gray-600">${intensity.name}</span>
+                    </div>
+                `;
+                
+                container.appendChild(entry);
+            });
+            
+            document.getElementById('count-48h').textContent = data.length;
+        }
+
+        // Function to render weekly rain entries
+        function renderWeeklyRainEntries(data) {
+            const container = document.getElementById('rain-table-week');
+            container.innerHTML = '';
+            
+            data.forEach(item => {
+                const intensity = getRainIntensity(item.rainfall_mm);
+                
+                const row = document.createElement('tr');
+                row.className = `rain-entry hover:bg-gray-50`;
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.region}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span class="font-medium">${item.city}</span>
+                        <span class="ml-2">${intensity.icon}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 ltr">
+                        <span class="font-bold">${item.rainfall_mm} مم</span>
+                        <span class="text-xs text-gray-400">(${intensity.name})</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.date} ${item.time}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.distance}</td>
+                `;
+                
+                container.appendChild(row);
+            });
+            
+            document.getElementById('count-week').textContent = data.length;
+        }
+
+        // Tab switching functionality
+        document.getElementById('tab-48h').addEventListener('click', function() {
+            this.classList.add('tab-active');
+            this.classList.remove('text-gray-500');
+            document.getElementById('tab-week').classList.remove('tab-active');
+            document.getElementById('tab-week').classList.add('text-gray-500');
+            
+            document.getElementById('content-48h').classList.remove('hidden');
+            document.getElementById('content-week').classList.add('hidden');
+        });
+
+        document.getElementById('tab-week').addEventListener('click', function() {
+            this.classList.add('tab-active');
+            this.classList.remove('text-gray-500');
+            document.getElementById('tab-48h').classList.remove('tab-active');
+            document.getElementById('tab-48h').classList.add('text-gray-500');
+            
+            document.getElementById('content-week').classList.remove('hidden');
+            document.getElementById('content-48h').classList.add('hidden');
+        });
+
+        // Filter functionality
+        document.getElementById('apply-filters').addEventListener('click', function() {
+            const regionFilter = document.getElementById('region-filter').value;
+            const intensityFilter = document.getElementById('intensity-filter').value;
+            const sortBy = document.getElementById('sort-by').value;
+            
+            // Filter 48h data
+            let filtered48h = rainData.filter(item => {
+                const matchesRegion = regionFilter === 'all' || item.region === regionFilter;
+                const intensity = getRainIntensity(item.rainfall_mm).class;
+                const matchesIntensity = intensityFilter === 'all' || intensity === intensityFilter;
+                return matchesRegion && matchesIntensity;
+            });
+            
+            // Filter weekly data
+            let filteredWeekly = weeklyData.filter(item => {
+                const matchesRegion = regionFilter === 'all' || item.region === regionFilter;
+                const intensity = getRainIntensity(item.rainfall_mm).class;
+                const matchesIntensity = intensityFilter === 'all' || intensity === intensityFilter;
+                return matchesRegion && matchesIntensity;
+            });
+            
+            // Sort data
+            if (sortBy === 'recent') {
+                filtered48h.sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
+                filteredWeekly.sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
+            } else if (sortBy === 'highest') {
+                filtered48h.sort((a, b) => b.rainfall_mm - a.rainfall_mm);
+                filteredWeekly.sort((a, b) => b.rainfall_mm - a.rainfall_mm);
+            } else if (sortBy === 'location') {
+                filtered48h.sort((a, b) => a.city.localeCompare(b.city));
+                filteredWeekly.sort((a, b) => a.city.localeCompare(b.city));
+            }
+            
+            // Render filtered data
+            render48hRainEntries(filtered48h);
+            renderWeeklyRainEntries(filteredWeekly);
+        });
+
+        // Initial render
+        render48hRainEntries(rainData);
+        renderWeeklyRainEntries(weeklyData);
+
+        // Simulate data update
+        setInterval(() => {
+            const now = new Date();
+            const options = { hour: '2-digit', minute: '2-digit' };
+            const timeStr = now.toLocaleTimeString('ar-MR', options);
+            document.getElementById('last-updated').textContent = `اليوم على الساعة ${timeStr}`;
+        }, 60000);
+    </script>
+<p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - 🧬 <a href="https://enzostvs-deepsite.hf.space?remix=dedesidivall/lekhrive" style="color: #fff;text-decoration: underline;" target="_blank" >Remix</a></p></body>
+</html>
